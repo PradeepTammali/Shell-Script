@@ -13,5 +13,5 @@ if [ $# -eq 2 ]; then
         done
     }
 else
-    echo "Usage: sh GenerateCSV.sh <filename without extension> <No of files to generate> \nThe files will be generated with .csv extension" 
-fi
+    printf "Usage: sh GenerateCSV.sh <filename without extension> <No of files to generate> \nThe files will be generated with .csv extension\n" 
+fi 
