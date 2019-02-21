@@ -1,0 +1,69 @@
+#!/bin/bash
+
+USERNAME="root"
+PASSWORD="root"
+INPUT_FILE_PATH="/home/pradeep/Desktop/DynamicVDB.csv"
+OUTPUT_FILE_PATH="/home/pradeep/Desktop/VDBS"
+	
+sed 1d $INPUT_FILE_PATH | while IFS="," read VDBName ModelName DBName TableName ColumnList SourceName sourceJndiName sourceTranslator Primary_key
+do
+	
+	if [ -f "$OUTPUT_FILE_PATH/$VDBName" ] ; then
+	       	echo "File already exist."
+		exit()
+	else
+		myfun(){
+			echo "# Script to reproduce DynamicVDB"
+ 		   	echo "create-vdb $VDBName" 
+			echo "cd $VDBName" 
+			echo "set-property description 'Dynamic VDB creation'" 
+		        echo "add-model $ModelName"  
+			echo "cd $ModelName" 
+		        echo "add-table $TableName" 
+			echo "cd $TableName" 
+			echo "set-property NAMEINSOURCE '$DBName.$TableName'" 
+
+
+			name=$(mysql -N -u $USERNAME -p$PASSWORD -D $DBName -e "select COLUMN_NAME from information_schema.columns where table_name='$TableName'")
+			names=($name)
+
+			data_type=$(mysql -N -u $USERNAME -p$PASSWORD -D $DBName -e "select DATA_TYPE from information_schema.columns where table_name='$TableName'")
+			data_types=($data_type)
+
+			length=$(mysql -N -u $USERNAME -p$PASSWORD -D $DBName -e "select CHARACTER_MAXIMUM_LENGTH from information_schema.columns where table_name='$TableName'")
+			sizes=($length)
+
+			nullable=$(mysql -N -u $USERNAME -p$PASSWORD -D $DBName -e "select IS_NULLABLE from information_schema.columns where table_name='$TableName'")
+			nulls=($nullable)
+		
+			if [[ "${ColumnList}" == "null" ||  "${ColumnList}" == "NULL" ]]; then
+				for (( i = 0 ; i < ${#names[@]} ; i++ )) do
+					echo "add-column ${names[$i]}"  
+					echo "cd ${names[$i]}"  
+					if [[ "${data_types[$i]}" == "varchar" ]]; then 
+						echo "set-property datatypeName string" 
+					fi
+					echo "set-property datatypeLength ${sizes[$i]}" 
+					echo "set-property NATIVE_TYPE ${data_types[$i]}" 
+					echo "set-property NAMEINSOURCE '${names[$i]}'" 
+					if [[ "${nulls[$i]}" == "NO" ]]; then 
+						echo "set-property nullable NO_NULLS" 
+					fi
+					echo "cd .."  
+				done
+			fi
+       	        	echo "add-primary-key pk" 
+                	echo "cd pk" 
+               		echo "add-column /workspace/$VDBName/$ModelName/$TableName/$Primary_key" 
+                	echo "cd ../../" 
+			echo "# PartsSQLServer VdbModelSource"  
+			echo "add-source $SourceName" 
+			echo "cd $SourceName" 
+			echo "set-property sourceJndiName $sourceJndiName" 
+			echo "set-property sourceTranslator $sourceTranslator" 
+			echo "cd ../../../"  
+			echo "server-deploy-vdb $VDBName"  
+		} >> $OUTPUT_FILE_PATH/$VDBName
+		myfun
+	fi
+done
