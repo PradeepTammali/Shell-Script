@@ -1,5 +1,9 @@
 # Shell-Script
-Shell scripts
+Sample Shell scripts
+
+References:
+
+http://www.theunixschool.com/2012/11/awk-examples-insert-remove-update-fields.html
 
 
 # JBoss 
